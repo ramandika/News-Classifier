@@ -1,25 +1,31 @@
 package news.classifier;
 import java.io.File;
-import java.util.logging.Filter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Random;
+import javax.swing.text.AttributeSet;
 import weka.classifiers.Classifier;
+import weka.classifiers.Evaluation;
 import weka.core.converters.DatabaseLoader;
 import weka.core.Instances;
 import weka.filters.unsupervised.attribute.NominalToString;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 import weka.filters.SimpleFilter;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
+import weka.core.Attribute;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Utils;
 
 /**
  *
  * @author timothy.pratama
  */
 public class Weka {
+    
     //Class attributes
-    private Instances dataSet; //Data Latih
-    private static final String jdbcdriver = "com.mysql.jdbc.Driver"; //driver jdbc
+    private Instances dataSet; //Data latih
+    private Instances testSet; //Data test
     private Classifier cls; //Model yang digunakan
+    private static final String jdbcdriver = "com.mysql.jdbc.Driver"; //driver jdbc
     
     //Setter and Getter
     public void setDataSet(Instances dataSet)
@@ -66,9 +72,12 @@ public class Weka {
             
             //Filter String To Word Vector
             StringToWordVector stringToWordVector = new StringToWordVector();
+            stringToWordVector.setIDFTransform(false);
+            stringToWordVector.setTFTransform(false);
             stringToWordVector.setAttributeIndices("1-2");
-            stringToWordVector.setStopwords(new File("stopwords.txt"));     
             stringToWordVector.setLowerCaseTokens(true);
+            stringToWordVector.setStopwords(new File("stopwords.txt"));    
+            stringToWordVector.setUseStoplist(true);
             stringToWordVector.setInputFormat(dataSet);
             dataSet = SimpleFilter.useFilter(dataSet,stringToWordVector);
         } catch (Exception ex) {
@@ -86,13 +95,50 @@ public class Weka {
             System.out.println(ex.toString());
         }
     }
+    
+    //evaluates model using cross-validation
+    public void crossValidation(int fold)
+    {
+        try {
+            Evaluation eval = new Evaluation (dataSet);
+            eval.crossValidateModel(cls, dataSet, fold, new Random(1));
+            System.out.println(eval.toSummaryString());
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+    }
+    public void readInput(String title, String content)
+    {
+        //Create instances attribute
+        Attribute judul = new Attribute("judul", (FastVector)null);
+        Attribute konten = new Attribute("full_text", (FastVector)null);
+        Attribute label = dataSet.attribute(2);
+        FastVector attributes = new FastVector();
+        attributes.addElement(judul);
+        attributes.addElement(konten);
+        attributes.addElement(label);
         
+        //Create new instances
+        testSet = new Instances("testSet", attributes, 0);
+        testSet.attribute(0).addStringValue(title);
+        testSet.attribute(1).addStringValue(content);
+        
+        //Adding data
+        double[] values = new double[testSet.numAttributes()];
+        values[0] = testSet.attribute(0).addStringValue(title);
+        values[1] = testSet.attribute(1).addStringValue(content);
+        Instance instance = new Instance(1.0, values);
+        testSet.add(instance);
+        System.out.println(testSet);
+    }
+    
     //main class
     public static void main(String[] args) {
         Weka weka = new Weka();
         weka.openDB("jdbc:mysql://localhost/news_aggregator", "root", "");
-        weka.filter();
-        weka.buildModel();
-        System.out.println(weka.getClassifier().toString());
+        //weka.filter();
+        //weka.buildModel();
+        //weka.crossValidation(10);
+        weka.readInput("judul", "konten");
     }
 }
