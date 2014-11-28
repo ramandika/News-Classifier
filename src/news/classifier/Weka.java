@@ -1,6 +1,8 @@
 package news.classifier;
 import java.io.File;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.text.AttributeSet;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
@@ -11,9 +13,12 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
 import weka.filters.SimpleFilter;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
 import weka.core.Attribute;
+import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Utils;
+import weka.core.tokenizers.AlphabeticTokenizer;
+import weka.filters.supervised.attribute.AttributeSelection;
 
 /**
  *
@@ -22,6 +27,7 @@ import weka.core.Utils;
 public class Weka {
     
     //Class attributes
+    private Instances initialDataSet;
     private Instances dataSet; //Data latih
     private Instances testSet; //Data test
     private Classifier cls; //Model yang digunakan
@@ -52,9 +58,10 @@ public class Weka {
             Class.forName(jdbcdriver);
             DatabaseLoader loader = new DatabaseLoader();
             loader.setSource(jdbc_url, the_user, the_password);
-            loader.setQuery("select artikel.judul, artikel.full_text, kategori.label from artikel natural join artikel_kategori_verified natural join kategori");
-            dataSet = loader.getDataSet();
-            dataSet.setClassIndex(2);
+            loader.setQuery("SELECT artikel.judul, artikel.full_text, "
+                    + "kategori.label FROM artikel NATURAL JOIN artikel_kategori_verified NATURAL JOIN kategori");
+            initialDataSet = loader.getDataSet();
+            initialDataSet.setClassIndex(2);
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }
@@ -67,17 +74,22 @@ public class Weka {
             //Filter Nominal To String
             NominalToString nominalToString = new NominalToString();
             nominalToString.setAttributeIndexes("1-2");
-            nominalToString.setInputFormat(dataSet);
-            dataSet = SimpleFilter.useFilter(dataSet,nominalToString);
+            nominalToString.setInputFormat(initialDataSet);
+            dataSet = SimpleFilter.useFilter(initialDataSet,nominalToString);
             
             //Filter String To Word Vector
             StringToWordVector stringToWordVector = new StringToWordVector();
-            stringToWordVector.setIDFTransform(false);
-            stringToWordVector.setTFTransform(false);
+            stringToWordVector.setIDFTransform(true);
+            stringToWordVector.setTFTransform(true);
             stringToWordVector.setAttributeIndices("1-2");
-            stringToWordVector.setLowerCaseTokens(true);
-            stringToWordVector.setStopwords(new File("stopwords.txt"));    
+            stringToWordVector.setLowerCaseTokens(true);  
+            stringToWordVector.setMinTermFreq(3);
+            stringToWordVector.setOutputWordCounts(true);
+            stringToWordVector.setStopwords(new File("stopwords2.txt"));
             stringToWordVector.setUseStoplist(true);
+            stringToWordVector.setStemmer(new MyIndonesiaStemmer());
+            stringToWordVector.setTokenizer(new AlphabeticTokenizer());
+            stringToWordVector.setWordsToKeep(1000);
             stringToWordVector.setInputFormat(dataSet);
             dataSet = SimpleFilter.useFilter(dataSet,stringToWordVector);
         } catch (Exception ex) {
@@ -85,6 +97,37 @@ public class Weka {
         }
     }
     
+    public Instances filter(Instances inst)
+    {
+        try {
+            //Filter Nominal To String
+            NominalToString nominalToString = new NominalToString();
+            nominalToString.setAttributeIndexes("1-2");
+            nominalToString.setInputFormat(initialDataSet);
+            inst = SimpleFilter.useFilter(initialDataSet,nominalToString);
+            
+            //Filter String To Word Vector
+            StringToWordVector stringToWordVector = new StringToWordVector();
+            stringToWordVector.setIDFTransform(true);
+            stringToWordVector.setTFTransform(true);
+            stringToWordVector.setAttributeIndices("1-2");
+            stringToWordVector.setLowerCaseTokens(true);  
+            stringToWordVector.setMinTermFreq(3);
+            stringToWordVector.setOutputWordCounts(true);
+            stringToWordVector.setStopwords(new File("stopwords2.txt"));
+            stringToWordVector.setUseStoplist(true);
+            stringToWordVector.setStemmer(new MyIndonesiaStemmer());
+            stringToWordVector.setTokenizer(new AlphabeticTokenizer());
+            stringToWordVector.setWordsToKeep(1000);
+            stringToWordVector.setInputFormat(inst);
+            inst = SimpleFilter.useFilter(inst,stringToWordVector);
+            return inst;
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+            return inst;
+        }
+    }
+        
     //build model based on dataSet
     public void buildModel()
     {
@@ -109,7 +152,7 @@ public class Weka {
     }
     public void readInput(String title, String content)
     {
-        //Create instances attribute
+        /*//Create instances attribute
         Attribute judul = new Attribute("judul", (FastVector)null);
         Attribute konten = new Attribute("full_text", (FastVector)null);
         Attribute label = dataSet.attribute(2);
@@ -127,18 +170,40 @@ public class Weka {
         double[] values = new double[testSet.numAttributes()];
         values[0] = testSet.attribute(0).addStringValue(title);
         values[1] = testSet.attribute(1).addStringValue(content);
-        Instance instance = new Instance(1.0, values);
-        testSet.add(instance);
-        System.out.println(testSet);
+        //Instance instance = new Instance(1.0, values);
+        //testSet.add(instance);
+        System.out.println(testSet);*/
+        double[] input = new double[initialDataSet.numAttributes()];
+        input[0] = initialDataSet.attribute(0).addStringValue(title);
+        input[1] = initialDataSet.attribute(1).addStringValue(content);
+        
+        Instances ins = new Instances(initialDataSet,0);
+        Instance row = new DenseInstance(1.0,input);
+        ins.add(row);
+        
+        ins = filter(ins);
+        try {
+            double result = cls.classifyInstance(ins.lastInstance());
+            System.out.println("Prediksi '"+ins.classAttribute().name()+"' adalah: " 
+                    + ins.classAttribute().value((int) result));
+            
+        } catch (Exception ex) {
+            System.out.println("Gagal klasifikasi");
+            Logger.getLogger(Weka.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     //main class
     public static void main(String[] args) {
         Weka weka = new Weka();
+        System.out.println("Connecting to database...");
         weka.openDB("jdbc:mysql://localhost/news_aggregator", "root", "");
-        //weka.filter();
-        //weka.buildModel();
-        //weka.crossValidation(10);
-        weka.readInput("judul", "konten");
+        System.out.println("Filtering...");
+        weka.filter();
+        System.out.println("Building Model...");
+        weka.buildModel();
+        System.out.println("Validating with cross validation...");
+        weka.crossValidation(10);
+        weka.readInput("", "");
     }
 }
