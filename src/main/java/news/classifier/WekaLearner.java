@@ -6,14 +6,14 @@
 
 package news.classifier;
 
-import java.io.File;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Random;
+
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.evaluation.Prediction;
-import weka.classifiers.evaluation.output.prediction.CSV;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -24,8 +24,13 @@ import weka.core.converters.ConverterUtils;
  *
  * @author Winson
  */
-public class WekaLearner {
-    public static final String[] CLASSIFIER_AVAILABLE = {"J48", "NaiveBayes", "IBk", "MultilayerPerceptron"};
+public class WekaLearner implements Serializable {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 2183403483098061244L;
+	
+	public static final String[] CLASSIFIER_AVAILABLE = {"J48", "NaiveBayes", "IBk", "MultilayerPerceptron"};
     private Classifier wClassifier;
     private Instances wTrainingSet;
     private int wClassIndex;

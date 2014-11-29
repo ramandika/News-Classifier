@@ -8,12 +8,18 @@ package news.classifier;
 
 
 import org.apache.lucene.analysis.id.IndonesianStemmer;
+
+import weka.core.stemmers.Stemmer;
 /**
  *
  * @author Winson
  */
-public class MyIndonesiaStemmer implements weka.core.stemmers.Stemmer{
-    String stemmedWord;
+public class MyIndonesiaStemmer implements Stemmer {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -4438017343300336280L;
+	String stemmedWord;
     
     public MyIndonesiaStemmer(){
         stemmedWord = "";

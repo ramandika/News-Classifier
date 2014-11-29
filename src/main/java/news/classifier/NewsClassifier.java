@@ -3,28 +3,34 @@ package news.classifier;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Serializable;
+import java.net.URL;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
 import weka.classifiers.evaluation.Prediction;
 import weka.classifiers.meta.FilteredClassifier;
-
 import weka.core.Instances;
 import weka.core.converters.CSVLoader;
 import weka.core.converters.DatabaseLoader;
 import weka.core.tokenizers.AlphabeticTokenizer;
 import weka.filters.Filter;
-
 import weka.filters.unsupervised.attribute.NominalToString;
 import weka.filters.unsupervised.attribute.StringToWordVector;
-
 import weka.filters.unsupervised.attribute.Remove;
 import weka.filters.unsupervised.attribute.Reorder;
 
-public class NewsClassifier {
-    private static final String jdbcdriver = "com.mysql.jdbc.Driver"; 
+public class NewsClassifier implements Serializable {
+	
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 6888550452919972123L;
+	
+	private static final String jdbcdriver = "com.mysql.jdbc.Driver"; 
     private WekaLearner wekaEngine;
 
     public NewsClassifier() {
@@ -53,7 +59,7 @@ public class NewsClassifier {
         } catch (Exception ex) {
             System.out.println(ex.toString());
         } finally {
-        	
+        	// closing the DB?
         }
     }
     
@@ -66,8 +72,12 @@ public class NewsClassifier {
         stringToWordVector.setLowerCaseTokens(true);  
         stringToWordVector.setMinTermFreq(3);
         stringToWordVector.setOutputWordCounts(true);
-        stringToWordVector.setStopwords(new File("stopwords2.txt"));
+        
+        File stopWords = new File(getClass().getResource("/stopwords2.txt").getFile());
+        
+        stringToWordVector.setStopwords(stopWords);
         stringToWordVector.setUseStoplist(true);
+        
         stringToWordVector.setStemmer(new MyIndonesiaStemmer());
         stringToWordVector.setTokenizer(new AlphabeticTokenizer());
         stringToWordVector.setWordsToKeep(1000);
@@ -162,7 +172,7 @@ public class NewsClassifier {
         NewsClassifier newsClassifier = new NewsClassifier();
         
         System.out.println("Connecting to database...");
-        newsClassifier.openDB("jdbc:mysql://localhost/news_aggregator", "root", "");
+        newsClassifier.openDB("jdbc:mysql://localhost/news_aggregator", "root", "capedeh");
         
         System.out.println("Set classifier...");
         newsClassifier.setClassifier();
@@ -175,7 +185,13 @@ public class NewsClassifier {
                 "Bandung (ANTARA News) - Tim \\\"Mutiara Hitam\\\" Persipura Jayapura mengalahkan tuan rumah Pelita Bandung Raya (PBR) 2-0 pada lanjutan Liga Super Indonesia (LSI) 2013 di Stadion Si Jalak Harupat Soreang Kabupaten Bandung, Minggu.\\nGol kemenangan tim Jayapura itu diborong kapten tim Boas Salosa masing-masing melalui penalti menit ke-9 dan tembakan kaki kiri pada menit ke-58.\\nDengan kemenangan itu, Persipura kembali menempati puncak klasemen sementara Liga Super Indonesia 2013 menggeser Mitra Kukar. Persipura mengantongi total nilai 24, hasil 14 kali main dengan 10 kali menang dan empat seri  tanpa kalah.\\nPersipura juga menjadi tim paling produktif mencetak 31 gol dan hanya kemasukan empat gol. Selain itu, dua gol Boaz Salosa menjadikannya kokoh menjadi top scorer Liga Super Indonesia 2013 dengan 12 gol, meninggalkan beberapa pesaingnya di deretan pencetak gol terbanyak.\\nSebaliknya, bagi Pelita Bandung Raya, kekalahan itu membuatnya tetap berkutat di peringkat ke-16 klasemen dengan skor 11 hasil 14 kali berlaga, dua kali menang, lima seri dan tujuh kali kalah.\\nKekalahan itu sekaligus juga merupakan kekalahan kandang kedua karena pada laga kandang sebelumnya pada Maret lalu, tim Bandung itu kalah dalam laga derby lawan Persib Bandung.");
         
         System.out.println("Klasifikasi file CSV");
-        newsClassifier.testCSV("template_csv.csv", "output.csv");
+        
+        String csvTemplate = NewsClassifier.class.getResource("/template_csv.csv").getFile();
+        
+        String csvOutput = NewsClassifier.class.getResource("/output/").getFile();
+        csvOutput += "output.csv";
+        
+        newsClassifier.testCSV(csvTemplate, csvOutput);
     }
     
 }
