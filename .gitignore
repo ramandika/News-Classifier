@@ -71,4 +71,4 @@ local.properties
 .buildpath
 
 # omit the output
-output.csv
+/src/main/resrouces/output.csv

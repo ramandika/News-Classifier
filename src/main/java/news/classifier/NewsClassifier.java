@@ -31,7 +31,7 @@ public class NewsClassifier implements Serializable {
 	 */
 	private static final long serialVersionUID = 6888550452919972123L;
 	
-    private WekaLearner wekaEngine;
+    private final WekaLearner wekaEngine;
 
     public NewsClassifier() {
         wekaEngine = new WekaLearner();
@@ -180,9 +180,11 @@ public class NewsClassifier implements Serializable {
         
         System.out.println("Klasifikasi file CSV");
         
-        String csvTemplate = NewsClassifier.class.getResource("/template_csv.csv").getFile();
+        String csvTemplate;
+            csvTemplate = NewsClassifier.class.getResource("/template_csv.csv").getFile();
         
-        String csvOutput = NewsClassifier.class.getResource("/output/").getFile();
+        String csvOutput;
+            csvOutput = NewsClassifier.class.getResource("/").getFile();
         csvOutput += "output.csv";
         
         newsClassifier.testCSV(csvTemplate, csvOutput);
