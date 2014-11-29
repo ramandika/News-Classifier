@@ -4,18 +4,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
-import java.net.URL;
+
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import news.classifier.db.DBLoader;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
 import weka.classifiers.evaluation.Prediction;
 import weka.classifiers.meta.FilteredClassifier;
 import weka.core.Instances;
 import weka.core.converters.CSVLoader;
-import weka.core.converters.DatabaseLoader;
+
 import weka.core.tokenizers.AlphabeticTokenizer;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.NominalToString;
@@ -30,26 +31,21 @@ public class NewsClassifier implements Serializable {
 	 */
 	private static final long serialVersionUID = 6888550452919972123L;
 	
-	private static final String jdbcdriver = "com.mysql.jdbc.Driver"; 
     private WekaLearner wekaEngine;
 
     public NewsClassifier() {
         wekaEngine = new WekaLearner();
     }
     
-    public void openDB(String jdbc_url, String the_user, String the_password) {
-    	DatabaseLoader loader = null;
+    public void loadData() {
+    	DBLoader loader = null;
         try {
-            Class.forName(jdbcdriver);
-            loader = new DatabaseLoader();
-            
-            loader.setSource(jdbc_url, the_user, the_password);
-            loader.setQuery("SELECT artikel.judul, artikel.full_text, "
-                    + "kategori.label FROM artikel NATURAL JOIN artikel_kategori_verified NATURAL JOIN kategori");
+        	loader = new DBLoader();
+        	
             Instances initialDataSet = loader.getDataSet();
             initialDataSet.setClassIndex(2);
             
-            //Filter Nominal To String
+            // Filter Nominal To String
             NominalToString nominalToString = new NominalToString();
             nominalToString.setAttributeIndexes("1-2");
             nominalToString.setInputFormat(initialDataSet);
@@ -58,8 +54,6 @@ public class NewsClassifier implements Serializable {
             wekaEngine.setTrainingData(initialDataSet);
         } catch (Exception ex) {
             System.out.println(ex.toString());
-        } finally {
-        	// closing the DB?
         }
     }
     
@@ -172,7 +166,7 @@ public class NewsClassifier implements Serializable {
         NewsClassifier newsClassifier = new NewsClassifier();
         
         System.out.println("Connecting to database...");
-        newsClassifier.openDB("jdbc:mysql://localhost/news_aggregator", "root", "capedeh");
+        newsClassifier.loadData();
         
         System.out.println("Set classifier...");
         newsClassifier.setClassifier();
