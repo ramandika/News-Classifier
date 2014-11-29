@@ -2,10 +2,13 @@ package news.classifier;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
+import weka.classifiers.evaluation.Prediction;
 import weka.classifiers.meta.FilteredClassifier;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -19,6 +22,8 @@ import weka.filters.unsupervised.attribute.ClassAssigner;
 import weka.filters.unsupervised.attribute.NominalToString;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 import weka.classifiers.evaluation.output.prediction.CSV;
+import weka.filters.unsupervised.attribute.Remove;
+import weka.filters.unsupervised.attribute.Reorder;
 
 public class NewsClassifier {
     private static final String jdbcdriver = "com.mysql.jdbc.Driver"; 
@@ -97,7 +102,7 @@ public class NewsClassifier {
             
         } catch (Exception ex) {
             System.out.println("Gagal klasifikasi");
-            Logger.getLogger(Weka.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(NewsClassifier.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -113,10 +118,33 @@ public class NewsClassifier {
         try {
             CSVLoader loader = new CSVLoader();
             loader.setSource(new File(filePathIn));
+            loader.setStringAttributes("2-3,6-7");
             Instances data = loader.getDataSet();
-            CSV prediction = new CSV();
-            wekaEngine.classifySuppliedTestSet(data, prediction);
-            System.out.println(prediction.toString());
+            data.setClassIndex(13);
+            
+            //Remove value
+            Remove removeAttribute = new Remove();
+            removeAttribute.setAttributeIndices("1-2,4-5,7-13");
+            removeAttribute.setInputFormat(data);
+            Instances filteredData = Filter.useFilter(data, removeAttribute);
+            
+            //Reorder
+            Reorder reorder = new Reorder();
+            reorder.setAttributeIndices("2,1,3");
+            reorder.setInputFormat(filteredData);
+            filteredData = Filter.useFilter(filteredData, reorder);
+            
+            List<Prediction> predictions = wekaEngine.fullTrainingEvaluation(filteredData);
+            try (PrintWriter writer = new PrintWriter(filePathOut, "UTF-8")) {
+                writer.println("'ID_ARTIKEL','LABEL'");
+                
+                for(int i=0; i<data.numInstances(); i++){
+                    int id = (int) data.get(i).value(0);
+                    String label = wekaEngine.getInstances().classAttribute().value((int)predictions.get(i).predicted());
+                    writer.printf("'%d','%s'\n", id, label);
+                }     
+                writer.close();
+            }
         } catch (IOException ex) {
             System.out.println("Klasifikasi dengan CSV gagal");
             System.out.println(ex);
@@ -145,8 +173,8 @@ public class NewsClassifier {
                 "Bandung (ANTARA News) - Tim \\\"Mutiara Hitam\\\" Persipura Jayapura mengalahkan tuan rumah Pelita Bandung Raya (PBR) 2-0 pada lanjutan Liga Super Indonesia (LSI) 2013 di Stadion Si Jalak Harupat Soreang Kabupaten Bandung, Minggu.\\nGol kemenangan tim Jayapura itu diborong kapten tim Boas Salosa masing-masing melalui penalti menit ke-9 dan tembakan kaki kiri pada menit ke-58.\\nDengan kemenangan itu, Persipura kembali menempati puncak klasemen sementara Liga Super Indonesia 2013 menggeser Mitra Kukar. Persipura mengantongi total nilai 24, hasil 14 kali main dengan 10 kali menang dan empat seri  tanpa kalah.\\nPersipura juga menjadi tim paling produktif mencetak 31 gol dan hanya kemasukan empat gol. Selain itu, dua gol Boaz Salosa menjadikannya kokoh menjadi top scorer Liga Super Indonesia 2013 dengan 12 gol, meninggalkan beberapa pesaingnya di deretan pencetak gol terbanyak.\\nSebaliknya, bagi Pelita Bandung Raya, kekalahan itu membuatnya tetap berkutat di peringkat ke-16 klasemen dengan skor 11 hasil 14 kali berlaga, dua kali menang, lima seri dan tujuh kali kalah.\\nKekalahan itu sekaligus juga merupakan kekalahan kandang kedua karena pada laga kandang sebelumnya pada Maret lalu, tim Bandung itu kalah dalam laga derby lawan Persib Bandung.");
         
         System.out.println("Klasifikasi file CSV");
-        
-        
+        newsClassifier.testCSV("template_csv.csv", "output.csv");
+
     }
     
 }

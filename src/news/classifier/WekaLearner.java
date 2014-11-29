@@ -6,10 +6,14 @@
 
 package news.classifier;
 
+import java.io.File;
+import java.util.List;
 import java.util.Random;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
+import weka.classifiers.evaluation.Prediction;
+import weka.classifiers.evaluation.output.prediction.CSV;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -72,6 +76,15 @@ public class WekaLearner {
         return wClassifier.toString()+wEvaluation.toSummaryString("\nHasil evaluasi dengan full-trainning:\n", false);
     }
 
+    public List<Prediction> fullTrainingEvaluation(Instances testData) throws Exception {
+        wClassifier.buildClassifier(wTrainingSet);
+        
+        wEvaluation = new Evaluation(wTrainingSet);
+        wEvaluation.evaluateModel(wClassifier, testData);
+        
+        return wEvaluation.predictions();
+    }
+        
     public String crossValidationEvaluation(int fold) throws Exception {
         wEvaluation = new Evaluation(wTrainingSet);
         wEvaluation.crossValidateModel(wClassifier, wTrainingSet, fold, new Random(1));
