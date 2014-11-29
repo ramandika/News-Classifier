@@ -16,7 +16,7 @@ URL fileURL = getClass().getResource("/[file name]");
 String filename = fileURL.getFile();
 
 // this is for static methods
-URL fileURLStatic = [ClassName].class.getResource("/[file name]").getResource("/[file name]");
+URL fileURLStatic = [ClassName].class.getResource("/[file name]");
 String filenameStatic = fileURLStatic.getFile();
 ```
 
