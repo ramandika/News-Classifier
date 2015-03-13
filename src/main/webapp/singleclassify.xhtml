@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://xmlns.jcp.org/jsf/passthrough"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+    <h:head>
+         <link rel="stylesheet" type="text/css" href="resource\css\bootstrap.css" />
+        <title>News Classifier</title>
+    </h:head>
+    <h:body>
+        <div class="container-fluid wrapper">
+            <nav class="navbar navbar-default navigation-header" role="navigation">
+                <div class="container-fluid">
+                    <div class="navbar-header">
+                        <a class="navbar-brand" href="#">News-Classifier</a>
+                    </div>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li><a href="singleclassify.xhtml">Input Text</a></li>
+                        <li><a href="csvclassify.xhtml">Input CSV</a></li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="inner-class">
+                    <h1 class="title">Classify News!</h1>
+              <h4 class="header-input-news">Input News</h4>
+              <h:form role="form">
+                  <div class="form-group input-text">
+                      <h:inputText p:placeholder="Title" id="judul" value="#{classifierBean.judul}" 
+                                   required="true" requiredMessage="Judul berita harus diisi"
+                                   class="form-element"/>
+                      <br/>
+                      <h:inputTextarea required="true" requiredMessage="Berita harus diisi" 
+                                       id="konten" value="#{classifierBean.konten}"
+                                       p:placeholder="News" class="form-element input-text-area"/>
+                  </div>
+              <h4 class="suggestion-text">Suggestion</h4>
+              <h:selectOneMenu id="subscriptions" value="#{classifierBean.selecteditem}" >
+                  <f:selectItem itemLabel="None" itemValue="None"/>
+                  <f:selectItem itemLabel="Pendidikan" itemValue="Pendidikan"/>
+                  <f:selectItem itemLabel="Politik" itemValue="Politik"/>
+                  <f:selectItem itemLabel="Hukum dan Kriminal" itemValue="Hukum dan Kriminal"/>
+                  <f:selectItem itemLabel="Sosial Budaya" itemValue="Sosial Budaya"/>
+                  <f:selectItem itemLabel="Olahraga" itemValue="Olahraga"/>
+                  <f:selectItem itemLabel="Teknologi dan Sains" itemValue="Teknologi dan Sains"/>
+                  <f:selectItem itemLabel="Hiburan" itemValue="Hiburan"/>
+                  <f:selectItem itemLabel="Bisnis dan Ekonomi" itemValue="Bisnis dan Ekonomi"/>
+                  <f:selectItem itemLabel="Kesehatan" itemValue="Kesehatan"/>
+                  <f:selectItem itemLabel="Bencana dan Kecelakaan" itemValue="Bencana dan Kecelakaan"/>
+              </h:selectOneMenu>
+              <br/>
+              <h:commandButton action="#{classifierBean.classifyNews()}" class="submit-button btn-primary" value="Classify"/>
+              </h:form><br/><br/><h:outputText value="#{classifierBean.sugesti}" />
+            </div>
+        </div>
+    </h:body>
+</html>
+

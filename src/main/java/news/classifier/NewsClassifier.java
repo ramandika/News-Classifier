@@ -67,7 +67,7 @@ public class NewsClassifier implements Serializable {
         stringToWordVector.setMinTermFreq(3);
         stringToWordVector.setOutputWordCounts(true);
         
-        File stopWords = new File(getClass().getResource("/stopwords2.txt").getFile());
+        File stopWords = new File(getClass().getResource("/stopwords.txt").getFile());
         
         stringToWordVector.setStopwords(stopWords);
         stringToWordVector.setUseStoplist(true);
@@ -95,7 +95,7 @@ public class NewsClassifier implements Serializable {
         }
     }
     
-    public void readInput(String title, String content)
+    public String readInput(String title, String content)
     {
         double[] input = new double[wekaEngine.getInstances().numAttributes()];
         input[0] = wekaEngine.getInstances().attribute(0).addStringValue(title);
@@ -105,10 +105,12 @@ public class NewsClassifier implements Serializable {
             double result = wekaEngine.classifyInstance(input);
             System.out.println("Prediksi '"+wekaEngine.getInstances().classAttribute().name()+"' adalah: " 
                     + wekaEngine.getInstances().classAttribute().value((int) result));
+            return wekaEngine.getInstances().classAttribute().value((int) result);
             
         } catch (Exception ex) {
             System.out.println("Gagal klasifikasi");
             Logger.getLogger(NewsClassifier.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
         }
     }
     
@@ -142,12 +144,12 @@ public class NewsClassifier implements Serializable {
             
             List<Prediction> predictions = wekaEngine.fullTrainingEvaluation(filteredData);
             try (PrintWriter writer = new PrintWriter(filePathOut, "UTF-8")) {
-                writer.println("'ID_ARTIKEL','LABEL'");
+                writer.println("ID_ARTIKEL,LABEL");
                 
                 for(int i=0; i<data.numInstances(); i++){
                     int id = (int) data.get(i).value(0);
                     String label = wekaEngine.getInstances().classAttribute().value((int)predictions.get(i).predicted());
-                    writer.printf("'%d','%s'\n", id, label);
+                    writer.printf("%d,%s\n", id, label);
                 }     
                 writer.close();
             }

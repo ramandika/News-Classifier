@@ -8,9 +8,7 @@ import weka.core.converters.DatabaseLoader;
 
 public class DBLoader implements Serializable {
 
-	private static final String SQL_QUERY = "SELECT artikel.judul, artikel.full_text, "
-								            + "kategori.label FROM artikel NATURAL JOIN "
-								            + "artikel_kategori_verified NATURAL JOIN kategori";
+	private static final String SQL_QUERY = "SELECT * FROM classify";
 	
 	private DatabaseLoader loader;
 	
